@@ -1,6 +1,7 @@
 import unittest
 from config import CORSConfig, AppConfig
 
+
 class TestCORSConfig(unittest.TestCase):
     def test_cors_origins(self):
         expected_origins = ['http://example.com', 'http://another-example.com']
@@ -29,10 +30,12 @@ class TestCORSConfig(unittest.TestCase):
     def test_cors_vary_header(self):
         self.assertTrue(CORSConfig.VARY_HEADER)
 
+
 class TestAppConfig(unittest.TestCase):
     def test_api_key(self):
         expected_api_key = "your_secret_api_key"
         self.assertEqual(AppConfig.API_KEY, expected_api_key)
+
 
 if __name__ == "__main__":
     unittest.main()

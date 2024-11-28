@@ -1,7 +1,7 @@
 class CORSConfig:
-    ORIGINS = ['http://example.com', 'http://another-example.com']
+    ORIGINS = ['*']
     METHODS = ['GET', 'POST', 'PUT', 'DELETE']
-    ALLOW_HEADERS = ['Authorization', 'Content-Type']
+    ALLOW_HEADERS = ['*']
     SUPPORTS_CREDENTIALS = False
     MAX_AGE = 3600
     SEND_WILDCARD = False
@@ -9,6 +9,5 @@ class CORSConfig:
     VARY_HEADER = True
 
 
-# Configuración general de la aplicación
 class AppConfig:
-    API_KEY = "your_secret_api_key"
+    API_KEY = 'your_secret_api_key'

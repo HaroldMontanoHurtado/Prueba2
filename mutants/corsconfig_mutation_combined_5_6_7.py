@@ -4,11 +4,10 @@ class CORSConfig:
     ALLOW_HEADERS = ['Authorization', 'Content-Type']
     SUPPORTS_CREDENTIALS = False
     MAX_AGE = 3600
-    SEND_WILDCARD = False
-    AUTOMATIC_OPTIONS = False
-    VARY_HEADER = True
+    SEND_WILDCARD = True
+    AUTOMATIC_OPTIONS = True
+    VARY_HEADER = False
 
 
-# Configuración general de la aplicación
 class AppConfig:
-    API_KEY = "your_secret_api_key"
+    API_KEY = 'your_secret_api_key'

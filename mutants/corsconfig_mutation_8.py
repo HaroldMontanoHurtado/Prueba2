@@ -6,9 +6,8 @@ class CORSConfig:
     MAX_AGE = 3600
     SEND_WILDCARD = False
     AUTOMATIC_OPTIONS = False
-    VARY_HEADER = True
+    VARY_HEADER = False
 
 
-# Configuración general de la aplicación
 class AppConfig:
-    API_KEY = "your_secret_api_key"
+    API_KEY = 'your_secret_api_key'

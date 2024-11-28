@@ -9,6 +9,5 @@ class CORSConfig:
     VARY_HEADER = True
 
 
-# Configuración general de la aplicación
 class AppConfig:
-    API_KEY = "your_secret_api_key"
+    API_KEY = ''
