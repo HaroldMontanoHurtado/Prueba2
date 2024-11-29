@@ -1,69 +1,78 @@
 import os
-import importlib
-import unittest
+import subprocess
+import requests
+import time
 
+# Configuración del directorio de mutantes
+mutants_dir = "app_mutants"
+test_url = "http://127.0.0.1:5000"  # URL del servidor Flask para probar
+test_path = "/"  # Ruta que se probará
 
-def discover_mutants(mutants_folder):
+# Variables para el informe
+total_mutants = 0
+survived_mutants = 0
+killed_mutants = 0
+invalid_mutants = 0
+
+def test_mutant(mutant_path):
     """
-    Descubre todos los archivos de mutantes en la carpeta especificada.
-    """
-    mutants = []
-    for root, _, files in os.walk(mutants_folder):
-        for file in files:
-            if file.endswith(".py") and not file.startswith("__"):
-                mutant_path = os.path.join(root, file)
-                module_path = mutant_path.replace(os.sep, ".").rstrip(".py")
-                mutants.append(module_path)
-    return mutants
-
-
-def run_tests_on_module(module_path):
-    """
-    Ejecuta las pruebas unitarias en un módulo importado dinámicamente.
+    Levanta el servidor mutante, realiza el test y determina si el mutante sobrevive.
     """
     try:
-        # Importar el módulo dinámicamente
-        imported_module = importlib.import_module(module_path)
+        # Inicia el servidor mutante
+        process = subprocess.Popen(["python", mutant_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        time.sleep(2)  # Da tiempo al servidor para inicializar
 
-        # Sustituir CORSConfig y AppConfig en el espacio de nombres global
-        globals()["CORSConfig"] = imported_module.CORSConfig
-        globals()["AppConfig"] = imported_module.AppConfig
-
-        # Correr las pruebas unitarias
-        test_loader = unittest.TestLoader()
-        test_suite = test_loader.loadTestsFromTestCase(TestCORSConfig)
-        test_result = unittest.TextTestRunner(stream=open(os.devnull, "w")).run(test_suite)
-
-        # Determinar si pasó o falló
-        return test_result.wasSuccessful()
-
+        # Realiza la solicitud HTTP
+        try:
+            response = requests.get(test_url + test_path, timeout=5)
+            if response.status_code == 200:
+                print(f"[SOBREVIVIÓ] El mutante {mutant_path} permitió acceso.")
+                return "survived"
+            else:
+                print(f"[MUERTO] El mutante {mutant_path} respondió con código {response.status_code}.")
+                return "killed"
+        except requests.exceptions.RequestException:
+            print(f"[MUERTO] El mutante {mutant_path} no respondió.")
+            return "killed"
     except Exception as e:
-        # Manejar errores si el módulo no es válido
-        print(f"Error ejecutando pruebas en {module_path}: {e}")
-        return False
+        print(f"[NO VÁLIDO] El mutante {mutant_path} no se pudo ejecutar: {e}")
+        return "invalid"
+    finally:
+        # Termina el servidor mutante
+        process.terminate()
+        try:
+            process.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            process.kill()
+        time.sleep(1)  # Da tiempo al sistema para liberar recursos
 
+# Probar cada mutante
+if os.path.exists(mutants_dir):
+    mutant_files = [os.path.join(mutants_dir, f) for f in os.listdir(mutants_dir) if f.endswith(".py")]
+    total_mutants = len(mutant_files)
 
-if __name__ == "__main__":
-    mutants_folder = "mutants"
-    mutants = discover_mutants(mutants_folder)
+    for mutant_file in mutant_files:
+        result = test_mutant(mutant_file)
+        if result == "survived":
+            survived_mutants += 1
+        elif result == "killed":
+            killed_mutants += 1
+        elif result == "invalid":
+            invalid_mutants += 1
+else:
+    print(f"No se encontró el directorio de mutantes: {mutants_dir}")
 
-    total_mutants = len(mutants)
-    failed_tests = 0
+# Calcular porcentaje de cobertura
+if total_mutants > 0:
+    coverage = (killed_mutants / total_mutants) * 100
+else:
+    coverage = 0
 
-    print(f"Total de mutantes encontrados: {total_mutants}\n")
-
-    for mutant in mutants:
-        result = run_tests_on_module(mutant)
-        if not result:
-            failed_tests += 1
-        status = "✅" if not result else "❌"
-        print(f"{mutant}: {status}")
-
-    passed_tests = total_mutants - failed_tests
-    coverage_percentage = (failed_tests / total_mutants) * 100 if total_mutants > 0 else 0
-
-    print("\nResumen:")
-    print(f"- Total de mutantes: {total_mutants}")
-    print(f"- Mutantes que pasaron las pruebas: {passed_tests}")
-    print(f"- Mutantes que fallaron las pruebas: {failed_tests}")
-    print(f"- Cobertura de pruebas: {coverage_percentage:.2f}%")
+# Generar informe
+print("\n===== INFORME =====")
+print(f"Total de mutantes: {total_mutants}")
+print(f"Mutantes muertos: {killed_mutants}")
+print(f"Mutantes sobrevivientes: {survived_mutants}")
+print(f"Mutantes no válidos: {invalid_mutants}")
+print(f"Porcentaje de cobertura: {coverage:.2f}%")
